@@ -229,3 +229,4 @@ Package the extension for Chrome Web Store distribution:
 ## 📄 License
 
 This project is licensed under the MIT License.
+# truevotter

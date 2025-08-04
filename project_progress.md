@@ -30,14 +30,11 @@ TrueVotter is a Reddit vote tracking SaaS platform that allows users to track vo
 **Completed**:
 - Repository cloned successfully
 - All dependencies installed (Backend: 771 packages, Frontend: 444 packages)
-- Environment files configured with MongoDB connection string
+- Environment files configured with provided database connection
 - Both servers running successfully
-- MongoDB Atlas connection verified
+- Database connection verified
 
-**Demo Credentials Found**:
-- Email: `integration@test.com`
-- Password: `testpass123`
-- Username: `integrationuser`
+**Demo Credentials**: Test credentials are available in the codebase for development testing
 
 ### Architecture Overview
 

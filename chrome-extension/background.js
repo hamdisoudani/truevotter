@@ -6,8 +6,10 @@ chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
     chrome.storage.sync.set({
       trackingEnabled: true,
-      apiUrl: 'http://localhost:8000'
+      apiUrl: 'http://localhost:8000',
+      firstLaunch: true
     });
+    chrome.tabs.create({ url: 'https://www.reddit.com/user/me' });
   }
 });
 

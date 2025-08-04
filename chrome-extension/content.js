@@ -5,9 +5,12 @@ let authToken = null;
 let currentUser = null;
 let redditUserId = null;
 
-chrome.storage.sync.get(['authToken', 'currentUser'], (result) => {
+chrome.storage.sync.get(['authToken', 'currentUser', 'firstLaunch'], (result) => {
   authToken = result.authToken;
   currentUser = result.currentUser;
+  if (result.firstLaunch && window.location.pathname.includes('/user/')) {
+    handleFirstLaunchProfileDetection();
+  }
 });
 
 const originalXHROpen = XMLHttpRequest.prototype.open;
@@ -53,6 +56,7 @@ function handleRedditUserIdentification(redditId) {
   console.log('Reddit user ID identified:', redditId);
   
   if (authToken && currentUser) {
+    showLoadingState('Linking Reddit account...');
     linkRedditAccount(redditId);
   }
 }
@@ -119,6 +123,25 @@ function trackVote(postData, voteType) {
     return;
   }
 
+  fetch(`${API_BASE_URL}/posts/${postData.postId}/is-tracked`, {
+    headers: {
+      'Authorization': `Bearer ${authToken}`,
+    }
+  })
+  .then(response => response.json())
+  .then(isTracked => {
+    if (isTracked) {
+      recordVote(postData, voteType);
+    } else {
+      console.log('Post not being tracked, skipping vote recording');
+    }
+  })
+  .catch(error => {
+    console.error('Error checking if post is tracked:', error);
+  });
+}
+
+function recordVote(postData, voteType) {
   const voteData = {
     postId: postData.postId,
     postTitle: postData.title,
@@ -177,17 +200,27 @@ function linkRedditAccount(redditId) {
   .then(response => response.json())
   .then(data => {
     console.log('Reddit account linked:', data);
+    hideLoadingState();
     showNotification('Reddit account linked successfully');
+    chrome.storage.sync.set({ firstLaunch: false });
   })
   .catch(error => {
     console.error('Error linking Reddit account:', error);
+    hideLoadingState();
+    showNotification('Error linking Reddit account. Please try again.');
   });
 }
 
 function extractRedditUsername() {
   const usernameMatch = window.location.pathname.match(/\/user\/([^\/]+)/);
-  if (usernameMatch) {
+  if (usernameMatch && usernameMatch[1] !== 'me') {
     return usernameMatch[1];
+  }
+  
+  const profileElement = document.querySelector('p.m-0.text-14.text-neutral-content-weak.font-semibold');
+  if (profileElement && profileElement.textContent.includes('u/')) {
+    const match = profileElement.textContent.match(/u\/([^\s]+)/);
+    return match ? match[1] : null;
   }
   
   const userElement = document.querySelector('[data-testid="user-menu-button"]') ||
@@ -398,3 +431,33 @@ if (document.readyState === 'loading') {
 }
 
 setTimeout(initVoteTracking, 2000);
+
+function handleFirstLaunchProfileDetection() {
+  console.log('First launch profile detection started');
+  
+  setTimeout(() => {
+    const redditUsername = extractRedditUsername();
+    if (redditUsername && authToken && currentUser) {
+      console.log('First launch: Reddit username detected:', redditUsername);
+      showNotification('Setting up Reddit integration...');
+    }
+  }, 2000);
+}
+
+function showLoadingState(message) {
+  const loader = document.createElement('div');
+  loader.id = 'reddit-tracker-loader';
+  loader.style.cssText = `
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.8); color: white; padding: 20px;
+    border-radius: 8px; z-index: 10001; font-family: Arial, sans-serif;
+    text-align: center;
+  `;
+  loader.innerHTML = `<div>${message}</div><div style="margin-top: 10px;">Please wait...</div>`;
+  document.body.appendChild(loader);
+}
+
+function hideLoadingState() {
+  const loader = document.getElementById('reddit-tracker-loader');
+  if (loader) loader.remove();
+}

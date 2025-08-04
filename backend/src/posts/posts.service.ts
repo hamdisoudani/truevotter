@@ -17,7 +17,10 @@ export class PostsService {
   }
 
   async findByOwner(ownerId: string): Promise<Post[]> {
-    return await this.postModel.find({ ownerId: new Types.ObjectId(ownerId) }).sort({ createdAt: -1 }).exec();
+    return await this.postModel
+      .find({ ownerId: new Types.ObjectId(ownerId) })
+      .sort({ createdAt: -1 })
+      .exec();
   }
 
   async findByPostId(postId: string): Promise<Post | null> {
@@ -25,7 +28,9 @@ export class PostsService {
   }
 
   async toggleTracking(postId: string, ownerId: string): Promise<Post | null> {
-    const post = await this.postModel.findOne({ postId, ownerId: new Types.ObjectId(ownerId) }).exec();
+    const post = await this.postModel
+      .findOne({ postId, ownerId: new Types.ObjectId(ownerId) })
+      .exec();
     if (!post) return null;
 
     post.isTracking = !post.isTracking;
@@ -33,12 +38,21 @@ export class PostsService {
   }
 
   async remove(postId: string, ownerId: string): Promise<boolean> {
-    const result = await this.postModel.deleteOne({ postId, ownerId: new Types.ObjectId(ownerId) }).exec();
+    const result = await this.postModel
+      .deleteOne({ postId, ownerId: new Types.ObjectId(ownerId) })
+      .exec();
     return result.deletedCount > 0;
   }
 
   async isOwner(postId: string, ownerId: string): Promise<boolean> {
-    const post = await this.postModel.findOne({ postId, ownerId: new Types.ObjectId(ownerId) }).exec();
+    const post = await this.postModel
+      .findOne({ postId, ownerId: new Types.ObjectId(ownerId) })
+      .exec();
+    return !!post;
+  }
+
+  async isTracked(postId: string): Promise<boolean> {
+    const post = await this.postModel.findOne({ postId, isTracking: true });
     return !!post;
   }
 }

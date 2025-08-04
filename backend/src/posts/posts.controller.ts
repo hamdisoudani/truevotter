@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Param, Delete, Patch, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  Patch,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -21,6 +31,11 @@ export class PostsController {
   @Get(':postId/is-owner')
   checkOwnership(@Param('postId') postId: string, @Request() req) {
     return this.postsService.isOwner(postId, req.user.id);
+  }
+
+  @Get(':postId/is-tracked')
+  checkIfTracked(@Param('postId') postId: string) {
+    return this.postsService.isTracked(postId);
   }
 
   @Patch(':postId/toggle-tracking')

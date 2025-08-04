@@ -229,4 +229,286 @@ Package the extension for Chrome Web Store distribution:
 ## 📄 License
 
 This project is licensed under the MIT License.
-# truevotter
+# TrueVotter - Reddit Vote Tracker
+
+A comprehensive SaaS platform to track Reddit upvotes and downvotes with secure authentication and Chrome extension integration.
+
+## 🚀 Features
+
+- **User Authentication**: Secure login/signup with JWT tokens
+- **Reddit Integration**: Chrome extension intercepts Reddit vote actions
+- **Vote Tracking**: Real-time tracking of upvotes, downvotes, and vote removals
+- **Dashboard**: Beautiful analytics dashboard with vote statistics
+- **Post Ownership**: Detect and track votes on your own posts
+- **MongoDB Storage**: Persistent data storage with user relationships
+- **Security**: Protected API endpoints and secure Chrome extension communication
+
+## 🏗️ Architecture
+
+- **Backend**: NestJS with MongoDB, JWT authentication, RESTful API
+- **Frontend**: Next.js with NextAuth v5, Tailwind CSS, shadcn/ui
+- **Chrome Extension**: Content script with Reddit XHR interception
+- **Database**: MongoDB with User, Vote, and Post collections
+
+## 📋 Prerequisites
+
+- Node.js 18+ and npm
+- MongoDB Atlas account (or local MongoDB)
+- Chrome browser for extension testing
+- Git for version control
+
+## 🛠️ Installation & Setup
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/hamdisoudani/truevotter.git
+cd truevotter
+```
+
+### 2. Backend Setup
+
+```bash
+cd backend
+npm install
+
+# Create environment file (see Environment Configuration section below)
+cp .env.example .env
+# Edit .env with your MongoDB connection string and JWT secret
+
+# Start development server
+npm run start:dev
+```
+
+The backend will run on `http://localhost:8000`
+
+### 3. Frontend Setup
+
+```bash
+cd frontend
+npm install
+
+# Create environment file (see Environment Configuration section below)
+cp .env.local.example .env.local
+# Edit .env.local with your API URL
+
+# Start development server
+npm run dev
+```
+
+The frontend will run on `http://localhost:5173`
+
+### 4. Chrome Extension Setup
+
+1. Open Chrome and navigate to `chrome://extensions/`
+2. Enable "Developer mode" (toggle in top right)
+3. Click "Load unpacked"
+4. Select the `chrome-extension` directory from this project
+5. The extension should now appear in your Chrome toolbar
+
+## 🔧 Environment Configuration
+
+### Backend Environment (.env)
+
+Create `/backend/.env` with the following content:
+
+```env
+# MongoDB Configuration
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/truevotter?retryWrites=true&w=majority
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-here-make-it-long-and-random
+JWT_EXPIRES_IN=7d
+
+# Server Configuration
+PORT=8000
+NODE_ENV=development
+
+# CORS Configuration
+FRONTEND_URL=http://localhost:5173
+```
+
+**Required Values:**
+- `MONGODB_URI`: Your MongoDB Atlas connection string
+- `JWT_SECRET`: A secure random string for JWT token signing (minimum 32 characters)
+- `PORT`: Backend server port (default: 8000)
+- `FRONTEND_URL`: Frontend URL for CORS configuration
+
+### Frontend Environment (.env.local)
+
+Create `/frontend/.env.local` with the following content:
+
+```env
+# API Configuration
+VITE_API_URL=http://localhost:8000
+
+# NextAuth Configuration (if using NextAuth)
+NEXTAUTH_URL=http://localhost:5173
+NEXTAUTH_SECRET=your-nextauth-secret-key-here
+
+# Development Configuration
+NODE_ENV=development
+```
+
+**Required Values:**
+- `VITE_API_URL`: Backend API URL (default: http://localhost:8000)
+- `NEXTAUTH_URL`: Frontend URL for NextAuth callbacks
+- `NEXTAUTH_SECRET`: Secret key for NextAuth session encryption
+
+## 🚀 Usage
+
+### 1. User Registration & Login
+
+1. Start both backend and frontend servers
+2. Navigate to `http://localhost:5173`
+3. Register a new account or login with existing credentials
+4. Your dashboard will show vote statistics and tracked posts
+
+### 2. Chrome Extension Usage
+
+1. Install the Chrome extension (see setup instructions above)
+2. Navigate to Reddit (`https://www.reddit.com`)
+3. The extension will automatically:
+   - Detect your Reddit user ID from XHR requests
+   - Track your vote actions (upvote/downvote/remove)
+   - Send vote data to your backend
+   - Link your Reddit account to your TrueVotter account
+
+### 3. Vote Tracking
+
+The extension intercepts these Reddit API calls:
+- **User ID Detection**: `https://matrix.redditspace.com/_matrix/client/v3/account/whoami`
+- **Vote Actions**: `https://www.reddit.com/svc/shreddit/graphql` (UpdatePostVoteState operation)
+
+Vote types tracked:
+- `UP`: Upvote action
+- `DOWN`: Downvote action  
+- `NONE`: Vote removal (when user removes their vote)
+
+### 4. Post Ownership Detection
+
+When viewing your own Reddit posts, the extension detects the "See More Insights" link pattern and offers to track votes on that specific post.
+
+## 📊 API Endpoints
+
+### Authentication
+- `POST /auth/register` - User registration
+- `POST /auth/login` - User login
+- `GET /auth/profile` - Get user profile (protected)
+- `PATCH /auth/link-reddit` - Link Reddit account (protected)
+
+### Votes
+- `POST /votes` - Create vote record (protected)
+- `GET /votes` - Get user's votes (protected)
+- `GET /votes/my-stats` - Get vote statistics (protected)
+- `GET /votes/post/:postId` - Get votes for specific post (protected)
+
+### Posts
+- `POST /posts` - Add post to tracking (protected)
+- `GET /posts` - Get tracked posts (protected)
+- `GET /posts/:postId/is-owner` - Check post ownership (protected)
+
+## 🧪 Testing
+
+### Backend Testing
+
+```bash
+cd backend
+npm run test
+npm run test:e2e
+```
+
+### Integration Testing
+
+Run the comprehensive integration test:
+
+```bash
+node test-integration.js
+```
+
+This tests:
+- User registration and authentication
+- Reddit account linking
+- Vote creation and tracking
+- Statistics generation
+- MongoDB data persistence
+
+### Chrome Extension Testing
+
+1. Install the extension in Chrome
+2. Navigate to Reddit and perform vote actions
+3. Check the extension popup for vote counts
+4. Verify data appears in the frontend dashboard
+5. Check browser console for extension logs
+
+## 🔒 Security Features
+
+- **JWT Authentication**: Secure token-based authentication
+- **Protected Routes**: All sensitive endpoints require authentication
+- **CORS Configuration**: Proper cross-origin resource sharing setup
+- **Input Validation**: Request validation using class-validator
+- **Password Hashing**: Secure password storage with bcrypt
+- **Environment Variables**: Sensitive data stored in environment files
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. **MongoDB Connection Failed**
+   - Verify your MongoDB URI in `.env`
+   - Check network connectivity
+   - Ensure MongoDB Atlas IP whitelist includes your IP
+
+2. **Chrome Extension Not Loading**
+   - Check `chrome://extensions/` for error messages
+   - Verify all extension files are present
+   - Check browser console for JavaScript errors
+
+3. **CORS Errors**
+   - Verify `FRONTEND_URL` in backend `.env`
+   - Check that frontend is running on the specified URL
+   - Clear browser cache and cookies
+
+4. **Vote Tracking Not Working**
+   - Ensure you're logged in to both TrueVotter and Reddit
+   - Check browser console for extension logs
+   - Verify Reddit XHR requests are being intercepted
+
+### Debug Mode
+
+Enable debug logging by setting:
+
+```env
+# Backend .env
+NODE_ENV=development
+LOG_LEVEL=debug
+
+# Frontend .env.local
+NODE_ENV=development
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 👥 Authors
+
+- **Hamdi Soudani** (@hamdisoudani) - Initial development
+- **Devin AI** - Implementation assistance
+
+## 🔗 Links
+
+- [GitHub Repository](https://github.com/hamdisoudani/truevotter)
+- [Devin Session](https://app.devin.ai/sessions/82114ae56e9040e28145d1fe496477ac)
+
+---
+
+**Note**: This is a development setup guide. For production deployment, additional security measures and environment configurations are recommended.

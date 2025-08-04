@@ -8,7 +8,8 @@ let redditUserId = null;
 chrome.storage.sync.get(['authToken', 'currentUser', 'firstLaunch'], (result) => {
   authToken = result.authToken;
   currentUser = result.currentUser;
-  if (result.firstLaunch && window.location.pathname.includes('/user/')) {
+  
+  if (authToken && currentUser && result.firstLaunch && window.location.pathname.includes('/user/')) {
     handleFirstLaunchProfileDetection();
   }
 });
@@ -147,7 +148,7 @@ function recordVote(postData, voteType) {
     postTitle: postData.title,
     postUrl: postData.url,
     subreddit: postData.subreddit,
-    username: postData.author,
+    username: currentUser.redditUsername || currentUser.username,
     voteType: voteType,
     timestamp: new Date().toISOString(),
     userAgent: navigator.userAgent,

@@ -126,6 +126,11 @@ async function handleLogin() {
       
       showAuthenticatedView();
       loadStats();
+      
+      if (!currentUser.redditUsername && !currentUser.redditId) {
+        chrome.tabs.create({ url: 'https://www.reddit.com/user/me' });
+        showNotification('Please visit your Reddit profile to link your account');
+      }
     } else {
       showError(data.message || 'Login failed');
     }
@@ -174,6 +179,11 @@ async function handleRegister() {
       
       showAuthenticatedView();
       loadStats();
+      
+      if (!currentUser.redditUsername && !currentUser.redditId) {
+        chrome.tabs.create({ url: 'https://www.reddit.com/user/me' });
+        showNotification('Please visit your Reddit profile to link your account');
+      }
     } else {
       showError(data.message || 'Registration failed');
     }
@@ -230,6 +240,17 @@ async function loadStats() {
     statusElement.style.color = '#721c24';
     statusElement.textContent = '⚠ Cannot connect to backend server';
   }
+}
+
+function showNotification(message) {
+  const notification = document.createElement('div');
+  notification.style.cssText = `
+    position: fixed; top: 10px; right: 10px; background: #ff4500; color: white;
+    padding: 10px; border-radius: 6px; font-size: 12px; z-index: 10000;
+  `;
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  setTimeout(() => notification.remove(), 3000);
 }
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -2,6 +2,8 @@
 
 A complete SaaS application for tracking Reddit upvotes and downvotes, built with Next.js, NestJS, and a Chrome extension.
 
+> 📋 **Project Progress**: For detailed development updates, feature changes, and technical decisions, see [project_progress.md](./project_progress.md)
+
 ## 🚀 Features
 
 - **Real-time Vote Tracking**: Automatically track upvotes and downvotes on Reddit posts

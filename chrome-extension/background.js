@@ -9,7 +9,6 @@ chrome.runtime.onInstalled.addListener((details) => {
       apiUrl: 'http://localhost:8000',
       firstLaunch: true
     });
-    chrome.tabs.create({ url: 'https://www.reddit.com/user/me' });
   }
 });
 

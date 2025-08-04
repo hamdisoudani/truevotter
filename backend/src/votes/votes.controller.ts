@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { VotesService } from './votes.service';
 import { CreateVoteDto } from './dto/create-vote.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -15,7 +24,11 @@ export class VotesController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  findAll(@Request() req, @Query('username') username?: string, @Query('subreddit') subreddit?: string) {
+  findAll(
+    @Request() req,
+    @Query('username') username?: string,
+    @Query('subreddit') subreddit?: string,
+  ) {
     if (username) {
       return this.votesService.findByUsername(username);
     }

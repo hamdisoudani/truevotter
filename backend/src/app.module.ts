@@ -15,7 +15,9 @@ import { PostsModule } from './posts/posts.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    MongooseModule.forRoot('mongodb+srv://hamdisoudanifreelancer:dinzabisgod1999@cluster0.tjbf8fp.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0'),
+    MongooseModule.forRoot(
+      'mongodb+srv://hamdisoudanifreelancer:dinzabisgod1999@cluster0.tjbf8fp.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
+    ),
     PassportModule,
     JwtModule.register({
       global: true,

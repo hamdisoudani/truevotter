@@ -19,7 +19,7 @@ export class UsersService {
 
   async findAll(): Promise<User[]> {
     const users = await this.userModel.find().exec();
-    return users.map(user => this.excludePassword(user.toObject()));
+    return users.map((user) => this.excludePassword(user.toObject()));
   }
 
   async findOne(id: string): Promise<User | null> {
@@ -36,20 +36,20 @@ export class UsersService {
   }
 
   async updateLastLogin(id: string): Promise<User | null> {
-    const user = await this.userModel.findByIdAndUpdate(
-      id,
-      { lastLogin: new Date() },
-      { new: true }
-    ).exec();
+    const user = await this.userModel
+      .findByIdAndUpdate(id, { lastLogin: new Date() }, { new: true })
+      .exec();
     return user ? this.excludePassword(user.toObject()) : null;
   }
 
-  async updateRedditInfo(id: string, redditUsername: string, redditId: string): Promise<User | null> {
-    const user = await this.userModel.findByIdAndUpdate(
-      id,
-      { redditUsername, redditId },
-      { new: true }
-    ).exec();
+  async updateRedditInfo(
+    id: string,
+    redditUsername: string,
+    redditId: string,
+  ): Promise<User | null> {
+    const user = await this.userModel
+      .findByIdAndUpdate(id, { redditUsername, redditId }, { new: true })
+      .exec();
     return user ? this.excludePassword(user.toObject()) : null;
   }
 

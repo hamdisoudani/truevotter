@@ -13,7 +13,9 @@ export class AuthService {
   ) {}
 
   async register(createUserDto: CreateUserDto) {
-    const existingUser = await this.usersService.findByEmail(createUserDto.email);
+    const existingUser = await this.usersService.findByEmail(
+      createUserDto.email,
+    );
     if (existingUser) {
       throw new UnauthorizedException('User already exists');
     }
@@ -43,7 +45,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      user.password,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -65,7 +70,15 @@ export class AuthService {
     return await this.usersService.findOne(payload.sub);
   }
 
-  async linkRedditAccount(userId: string, redditUsername: string, redditId: string) {
-    return await this.usersService.updateRedditInfo(userId, redditUsername, redditId);
+  async linkRedditAccount(
+    userId: string,
+    redditUsername: string,
+    redditId: string,
+  ) {
+    return await this.usersService.updateRedditInfo(
+      userId,
+      redditUsername,
+      redditId,
+    );
   }
 }

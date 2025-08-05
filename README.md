@@ -13,6 +13,30 @@ A complete SaaS application for tracking Reddit upvotes and downvotes, built wit
 - ✅ **Enhanced request/response interceptors** - Automatic token management and 401 error handling with redirect
 - ✅ **Updated all authentication components** - Migrated from direct fetch calls to configured axios instance
 - ✅ **Maintained backward compatibility** - Preserved existing authentication flow while upgrading infrastructure
+- ✅ **Fixed TypeScript build errors** - Resolved use-toast.ts type issues breaking Vercel deployment
+
+## 🚨 Development Rules
+
+### Testing Vercel Builds Locally
+**CRITICAL**: Always test Vercel builds locally before pushing changes to production branches:
+
+```bash
+cd frontend
+npm run build  # Must pass without TypeScript errors
+npm run lint   # Check for code quality issues
+npm run dev    # Verify functionality still works
+```
+
+**Why this matters:**
+- Vercel builds fail on TypeScript errors that may not appear in development
+- Local testing prevents deployment failures and saves time
+- Ensures production stability and reduces rollback risk
+- Catches type issues that only surface during production builds
+
+**Before every push:**
+1. Run `npm run build` and ensure it completes successfully
+2. Test core functionality in development mode
+3. Only push if both build and functionality tests pass
 
 ## 🚀 Features
 

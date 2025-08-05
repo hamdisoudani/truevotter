@@ -12,6 +12,8 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       ...frontendUrls,
+      'https://www.reddit.com',
+      'https://old.reddit.com',
       'chrome-extension://*',
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],

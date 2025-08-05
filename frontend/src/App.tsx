@@ -8,9 +8,9 @@ import { WelcomeSection } from './components/dashboard/WelcomeSection';
 import { StatsCards } from './components/dashboard/StatsCards';
 import { RecentActivity } from './components/dashboard/RecentActivity';
 import { Separator } from './components/ui/separator';
+import { apiClient } from './lib/api';
 import './App.css';
 
-const API_BASE_URL = 'http://localhost:8000';
 
 interface Vote {
   id: string;
@@ -50,27 +50,12 @@ function Dashboard() {
     try {
       setLoading(true);
       const [votesResponse, statsResponse] = await Promise.all([
-        fetch(`${API_BASE_URL}/votes`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        }),
-        fetch(`${API_BASE_URL}/votes/my-stats`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        })
+        apiClient.get('/votes'),
+        apiClient.get('/votes/my-stats'),
       ]);
-
-      if (!votesResponse.ok || !statsResponse.ok) {
-        throw new Error('Failed to fetch data');
-      }
-
-      const votesData = await votesResponse.json();
-      const statsData = await statsResponse.json();
-
-      setVotes(votesData);
-      setStats(statsData);
+      
+      setVotes(votesResponse.data);
+      setStats(statsResponse.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

@@ -36,8 +36,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
 
     try {
       await register(email, password, username);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed');
+    } catch (err) {
+      setError(err instanceof Error && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'message' in err.response.data ? String(err.response.data.message) : 'Registration failed');
     } finally {
       setIsLoading(false);
     }

@@ -23,8 +23,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode }) => {
 
     try {
       await login(email, password);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed');
+    } catch (err) {
+      setError(err instanceof Error && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'message' in err.response.data ? String(err.response.data.message) : 'Login failed');
     } finally {
       setIsLoading(false);
     }

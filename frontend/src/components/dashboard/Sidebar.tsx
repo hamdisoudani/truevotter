@@ -71,7 +71,7 @@ export function AppSidebar() {
             <User className="h-4 w-4" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{user?.username}</p>
+            <p className="text-sm font-medium truncate">{user?.username || 'User'}</p>
             <p className="text-xs text-muted-foreground truncate">
               {user?.redditUsername ? `u/${user.redditUsername}` : 'No Reddit account'}
             </p>

@@ -5,10 +5,13 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  const frontendUrls = process.env.FRONTEND_URL 
+    ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
+    : ['http://localhost:5173'];
+
   app.enableCors({
     origin: [
-      'http://localhost:3000',
-      'http://localhost:5173',
+      ...frontendUrls,
       'chrome-extension://*',
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],

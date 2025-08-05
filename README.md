@@ -4,6 +4,16 @@ A complete SaaS application for tracking Reddit upvotes and downvotes, built wit
 
 > 📋 **Project Progress**: For detailed development updates, feature changes, and technical decisions, see [project_progress.md](./project_progress.md)
 
+## 🔄 Recent Updates
+
+- ✅ **Fixed Vercel deployment TypeScript dependency issue** - Moved TypeScript from devDependencies to dependencies
+- ✅ **Upgraded authentication system with axios configuration** - Implemented centralized axios client with automatic bearer token attachment
+- ✅ **Added environment variable support** - Replaced hardcoded API URLs with configurable environment variables
+- ✅ **Configured timeout handling** - Added 10-second timeout for all API requests with proper error handling
+- ✅ **Enhanced request/response interceptors** - Automatic token management and 401 error handling with redirect
+- ✅ **Updated all authentication components** - Migrated from direct fetch calls to configured axios instance
+- ✅ **Maintained backward compatibility** - Preserved existing authentication flow while upgrading infrastructure
+
 ## 🚀 Features
 
 - **Real-time Vote Tracking**: Automatically track upvotes and downvotes on Reddit posts

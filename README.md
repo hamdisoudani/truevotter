@@ -6,6 +6,11 @@ A complete SaaS application for tracking Reddit upvotes and downvotes, built wit
 
 ## 🔄 Recent Updates
 
+- ✅ **Enhanced Reddit account linking with user consent** - Added consent prompt before collecting Reddit profile data
+- ✅ **Extended Reddit profile data collection** - Now captures avatar, karma, account creation date, and verification status  
+- ✅ **Added "Link Reddit" action button** - Users can manually initiate Reddit account linking from extension popup
+- ✅ **Updated extension UI design** - Chrome extension now matches frontend design system with shadcn/ui styling
+- ✅ **Improved Reddit profile display** - Dashboard shows Reddit avatar and karma information
 - ✅ **Fixed Vercel deployment TypeScript dependency issue** - Moved TypeScript from devDependencies to dependencies
 - ✅ **Upgraded authentication system with axios configuration** - Implemented centralized axios client with automatic bearer token attachment
 - ✅ **Added environment variable support** - Replaced hardcoded API URLs with configurable environment variables

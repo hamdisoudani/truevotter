@@ -26,6 +26,18 @@ export class User {
   redditId?: string;
 
   @Prop()
+  redditAvatarUrl?: string;
+
+  @Prop()
+  redditKarma?: number;
+
+  @Prop()
+  redditAccountCreated?: Date;
+
+  @Prop()
+  redditVerified?: boolean;
+
+  @Prop()
   lastLogin: Date;
 }
 

@@ -1,5 +1,6 @@
 import { Home, BarChart3, Settings, User, LogOut } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
+import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import {
   Sidebar,
   SidebarContent,
@@ -67,13 +68,26 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t border-sidebar-border">
         <div className="flex items-center gap-3 px-4 py-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-            <User className="h-4 w-4" />
-          </div>
+          {user?.redditAvatarUrl ? (
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={user.redditAvatarUrl} alt="Reddit Avatar" />
+              <AvatarFallback>
+                <User className="h-4 w-4" />
+              </AvatarFallback>
+            </Avatar>
+          ) : (
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+              <User className="h-4 w-4" />
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{user?.username || 'User'}</p>
             <p className="text-xs text-muted-foreground truncate">
-              {user?.redditUsername ? `u/${user.redditUsername}` : 'No Reddit account'}
+              {user?.redditUsername ? (
+                <span>u/{user.redditUsername} {user.redditKarma && `• ${user.redditKarma} karma`}</span>
+              ) : (
+                'No Reddit account'
+              )}
             </p>
           </div>
           <Button variant="ghost" size="sm" onClick={logout}>

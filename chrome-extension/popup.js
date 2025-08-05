@@ -27,11 +27,11 @@ function showLoginView() {
         <input type="email" id="email" placeholder="Email" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; box-sizing: border-box;">
         <input type="password" id="password" placeholder="Password" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 15px; box-sizing: border-box;">
         
-        <button id="loginBtn" style="width: 100%; padding: 12px; background: #ff4500; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; margin-bottom: 10px;">
+        <button id="loginBtn" style="width: 100%; padding: 12px; background: #09090b; color: #fafafa; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; margin-bottom: 10px; transition: background-color 0.2s;">
           Login
         </button>
         
-        <button id="registerBtn" style="width: 100%; padding: 12px; background: #f8f9fa; color: #333; border: 1px solid #dee2e6; border-radius: 6px; font-size: 14px; cursor: pointer;">
+        <button id="registerBtn" style="width: 100%; padding: 12px; background: #f4f4f5; color: #09090b; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background-color 0.2s;">
           Register
         </button>
       </div>
@@ -77,13 +77,20 @@ function showAuthenticatedView() {
       
       <div id="status" style="padding: 10px; border-radius: 6px; font-size: 14px; text-align: center; margin-bottom: 15px;"></div>
       
-      <div style="display: flex; gap: 10px;">
-        <button id="openDashboard" style="flex: 1; padding: 10px; background: #007bff; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer;">
-          Open Dashboard
-        </button>
-        <button id="logoutBtn" style="flex: 1; padding: 10px; background: #6c757d; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer;">
-          Logout
-        </button>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        ${!currentUser.redditUsername ? `
+          <button id="linkRedditBtn" style="width: 100%; padding: 12px; background: #ff4500; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            🔗 Link Reddit Account
+          </button>
+        ` : ''}
+        <div style="display: flex; gap: 10px;">
+          <button id="openDashboard" style="flex: 1; padding: 10px; background: #09090b; color: #fafafa; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background-color 0.2s;">
+            Open Dashboard
+          </button>
+          <button id="logoutBtn" style="flex: 1; padding: 10px; background: #ef4444; color: #fafafa; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer;">
+            Logout
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -93,6 +100,13 @@ function showAuthenticatedView() {
   });
   
   document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+  
+  if (!currentUser.redditUsername) {
+    document.getElementById('linkRedditBtn').addEventListener('click', () => {
+      chrome.tabs.create({ url: 'https://www.reddit.com/user/me' });
+      showNotification('Visit your Reddit profile to link your account');
+    });
+  }
 }
 
 async function handleLogin() {

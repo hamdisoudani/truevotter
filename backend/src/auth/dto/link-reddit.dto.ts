@@ -1,4 +1,4 @@
-import { IsString } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsBoolean, IsDateString } from 'class-validator';
 
 export class LinkRedditDto {
   @IsString()
@@ -6,4 +6,20 @@ export class LinkRedditDto {
 
   @IsString()
   redditId: string;
+
+  @IsOptional()
+  @IsString()
+  redditAvatarUrl?: string;
+
+  @IsOptional()
+  @IsNumber()
+  redditKarma?: number;
+
+  @IsOptional()
+  @IsDateString()
+  redditAccountCreated?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  redditVerified?: boolean;
 }

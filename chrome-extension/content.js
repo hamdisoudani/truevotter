@@ -56,9 +56,8 @@ function handleRedditUserIdentification(redditId) {
   redditUserId = redditId;
   console.log('Reddit user ID identified:', redditId);
   
-  if (authToken && currentUser) {
-    showLoadingState('Linking Reddit account...');
-    linkRedditAccount(redditId);
+  if (authToken && currentUser && !currentUser.redditUsername) {
+    showRedditConsentPrompt(redditId);
   }
 }
 
@@ -179,6 +178,123 @@ function recordVote(postData, voteType) {
   .catch(error => {
     console.error('Error tracking vote:', error);
     showNotification('Error tracking vote');
+  });
+}
+
+function showRedditConsentPrompt(redditId) {
+  const redditUsername = extractRedditUsername();
+  const redditData = extractRedditProfileData();
+  
+  const consentDialog = document.createElement('div');
+  consentDialog.id = 'reddit-consent-dialog';
+  consentDialog.style.cssText = `
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+    background: rgba(0,0,0,0.8); z-index: 10000; display: flex; 
+    align-items: center; justify-content: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  `;
+  
+  consentDialog.innerHTML = `
+    <div style="background: white; border-radius: 8px; padding: 24px; max-width: 500px; margin: 20px;">
+      <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #111;">
+        🔗 Link Your Reddit Account
+      </h2>
+      <p style="color: #666; margin-bottom: 20px; line-height: 1.5;">
+        TrueVotter would like to link your Reddit account to track votes on your posts. 
+        The following information will be stored:
+      </p>
+      <div style="background: #f8f9fa; padding: 16px; border-radius: 6px; margin-bottom: 20px;">
+        <div style="margin-bottom: 8px;"><strong>Username:</strong> ${redditUsername || 'Not detected'}</div>
+        <div style="margin-bottom: 8px;"><strong>User ID:</strong> ${redditId}</div>
+        <div style="margin-bottom: 8px;"><strong>Avatar:</strong> ${redditData.avatar ? 'Yes' : 'Not available'}</div>
+        <div><strong>Account Info:</strong> Karma, creation date, verification status</div>
+      </div>
+      <p style="color: #666; font-size: 14px; margin-bottom: 24px;">
+        This data helps identify your posts and provide accurate vote tracking. You can revoke this connection anytime in your dashboard.
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button id="reddit-consent-deny" style="padding: 8px 16px; border: 1px solid #d1d5db; background: white; border-radius: 6px; cursor: pointer; font-size: 14px;">
+          Cancel
+        </button>
+        <button id="reddit-consent-allow" style="padding: 8px 16px; background: #ff4500; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+          Allow & Link Account
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(consentDialog);
+  
+  document.getElementById('reddit-consent-allow').addEventListener('click', () => {
+    document.body.removeChild(consentDialog);
+    showLoadingState('Linking Reddit account...');
+    linkRedditAccountWithConsent(redditId, redditUsername, redditData);
+  });
+  
+  document.getElementById('reddit-consent-deny').addEventListener('click', () => {
+    document.body.removeChild(consentDialog);
+    showNotification('Reddit account linking cancelled');
+  });
+}
+
+function extractRedditProfileData() {
+  try {
+    const avatarImg = document.querySelector('img[alt*="avatar"], img[src*="avatar"], .ProfileHeader img');
+    const avatarUrl = avatarImg ? avatarImg.src : null;
+    
+    const karmaElement = document.querySelector('[data-testid="karma"], .karma, .ProfileHeader-karma');
+    const karma = karmaElement ? parseInt(karmaElement.textContent.replace(/[^\d]/g, '')) : null;
+    
+    const createdElement = document.querySelector('[data-testid="created"], .ProfileHeader-created');
+    const accountCreated = createdElement ? new Date(createdElement.textContent) : null;
+    
+    const verifiedElement = document.querySelector('.verified, [data-testid="verified"]');
+    const verified = !!verifiedElement;
+    
+    return {
+      avatar: avatarUrl,
+      karma: karma,
+      accountCreated: accountCreated,
+      verified: verified
+    };
+  } catch (error) {
+    console.error('Error extracting Reddit profile data:', error);
+    return {};
+  }
+}
+
+function linkRedditAccountWithConsent(redditId, redditUsername, profileData) {
+  if (!redditUsername) return;
+
+  const linkData = {
+    redditUsername,
+    redditId,
+    redditAvatarUrl: profileData.avatar,
+    redditKarma: profileData.karma,
+    redditAccountCreated: profileData.accountCreated?.toISOString(),
+    redditVerified: profileData.verified
+  };
+
+  fetch(`${API_BASE_URL}/auth/link-reddit`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${authToken}`,
+    },
+    body: JSON.stringify(linkData)
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log('Reddit account linked:', data);
+    hideLoadingState();
+    showNotification('Reddit account linked successfully');
+    currentUser.redditUsername = redditUsername;
+    currentUser.redditId = redditId;
+    chrome.storage.sync.set({ currentUser });
+  })
+  .catch(error => {
+    console.error('Error linking Reddit account:', error);
+    hideLoadingState();
+    showNotification('Error linking Reddit account. Please try again.');
   });
 }
 

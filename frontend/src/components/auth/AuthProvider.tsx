@@ -7,6 +7,10 @@ interface User {
   username: string;
   redditUsername?: string;
   redditId?: string;
+  redditAvatarUrl?: string;
+  redditKarma?: number;
+  redditAccountCreated?: Date;
+  redditVerified?: boolean;
 }
 
 interface AuthContextType {

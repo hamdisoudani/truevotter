@@ -14,6 +14,7 @@ A complete SaaS application for tracking Reddit upvotes and downvotes, built wit
 - ✅ **Updated all authentication components** - Migrated from direct fetch calls to configured axios instance
 - ✅ **Maintained backward compatibility** - Preserved existing authentication flow while upgrading infrastructure
 - ✅ **Fixed TypeScript build errors** - Resolved use-toast.ts type issues breaking Vercel deployment
+- ✅ **Made backend CORS configuration dynamic** - Replaced hardcoded frontend URLs with environment variables
 
 ## 🚨 Development Rules
 

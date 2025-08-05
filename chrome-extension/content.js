@@ -5,11 +5,13 @@ let authToken = null;
 let currentUser = null;
 let redditUserId = null;
 
-chrome.storage.sync.get(['authToken', 'currentUser', 'firstLaunch'], (result) => {
+chrome.storage.sync.get(['authToken', 'currentUser', 'firstLaunch', 'isLinkingReddit', 'linkingTabId'], (result) => {
   authToken = result.authToken;
   currentUser = result.currentUser;
   
-  if (authToken && currentUser && result.firstLaunch && window.location.pathname.includes('/user/')) {
+  if (result.isLinkingReddit && window.location.pathname.includes('/user/')) {
+    handleRedditLinkingFlow();
+  } else if (authToken && currentUser && result.firstLaunch && window.location.pathname.includes('/user/')) {
     handleFirstLaunchProfileDetection();
   }
 });
@@ -36,6 +38,16 @@ XMLHttpRequest.prototype.send = function(data) {
         }
       }
     });
+    
+    this.addEventListener('error', function() {
+      console.error('Error loading whoami endpoint');
+      updateLinkingProgress('Error loading Reddit user data. Please refresh the page.');
+    });
+    
+    this.addEventListener('timeout', function() {
+      console.error('Timeout loading whoami endpoint');
+      updateLinkingProgress('Timeout loading Reddit user data. Please refresh the page.');
+    });
   }
   
   if (this._url.includes('/svc/shreddit/graphql') && data) {
@@ -56,9 +68,31 @@ function handleRedditUserIdentification(redditId) {
   redditUserId = redditId;
   console.log('Reddit user ID identified:', redditId);
   
-  if (authToken && currentUser && !currentUser.redditUsername) {
-    showRedditConsentPrompt(redditId);
-  }
+  chrome.storage.sync.get(['isLinkingReddit'], (result) => {
+    if (result.isLinkingReddit) {
+      updateLinkingProgress('Reddit user ID extracted successfully');
+      setTimeout(() => {
+        const redditUsername = extractRedditUsername();
+        if (redditUsername) {
+          updateLinkingProgress('Reddit username extracted: ' + redditUsername);
+          setTimeout(() => {
+            if (verifyOwnProfile(redditUsername)) {
+              updateLinkingProgress('Profile verification successful');
+              setTimeout(() => {
+                showEnhancedRedditConsentPrompt(redditId, redditUsername);
+              }, 1000);
+            } else {
+              showProfileVerificationError();
+            }
+          }, 1000);
+        } else {
+          updateLinkingProgress('Unable to extract Reddit username. Please ensure you are on your profile page.');
+        }
+      }, 1000);
+    } else if (authToken && currentUser && !currentUser.redditUsername) {
+      showRedditConsentPrompt(redditId);
+    }
+  });
 }
 
 function handleVoteInterception(voteInput) {
@@ -287,9 +321,16 @@ function linkRedditAccountWithConsent(redditId, redditUsername, profileData) {
     console.log('Reddit account linked:', data);
     hideLoadingState();
     showNotification('Reddit account linked successfully');
+    
     currentUser.redditUsername = redditUsername;
     currentUser.redditId = redditId;
-    chrome.storage.sync.set({ currentUser });
+    currentUser.isRedditLinked = true;
+    
+    chrome.storage.sync.set({ 
+      currentUser,
+      isLinkingReddit: false,
+      linkingTabId: null
+    });
   })
   .catch(error => {
     console.error('Error linking Reddit account:', error);
@@ -566,15 +607,224 @@ function showLoadingState(message) {
   loader.id = 'reddit-tracker-loader';
   loader.style.cssText = `
     position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    background: rgba(0,0,0,0.8); color: white; padding: 20px;
-    border-radius: 8px; z-index: 10001; font-family: Arial, sans-serif;
-    text-align: center;
+    background: rgba(0,0,0,0.9); color: white; padding: 30px;
+    border-radius: 12px; z-index: 10001; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    text-align: center; min-width: 300px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
   `;
-  loader.innerHTML = `<div>${message}</div><div style="margin-top: 10px;">Please wait...</div>`;
+  loader.innerHTML = `
+    <div style="font-size: 16px; font-weight: 600; margin-bottom: 15px;">🔗 Linking Reddit Account</div>
+    <div id="loading-progress" style="font-size: 14px; margin-bottom: 15px;">${message}</div>
+    <div style="display: flex; justify-content: center; align-items: center;">
+      <div style="width: 20px; height: 20px; border: 2px solid #ff4500; border-top: 2px solid transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    </div>
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  `;
   document.body.appendChild(loader);
+  
+  preventNavigation();
 }
 
 function hideLoadingState() {
   const loader = document.getElementById('reddit-tracker-loader');
   if (loader) loader.remove();
+  allowNavigation();
+}
+
+function updateLinkingProgress(message) {
+  const progressElement = document.getElementById('loading-progress');
+  if (progressElement) {
+    progressElement.textContent = message;
+  }
+}
+
+function preventNavigation() {
+  window.addEventListener('beforeunload', handleBeforeUnload);
+  window.addEventListener('popstate', handlePopState);
+}
+
+function allowNavigation() {
+  window.removeEventListener('beforeunload', handleBeforeUnload);
+  window.removeEventListener('popstate', handlePopState);
+}
+
+function handleBeforeUnload(e) {
+  e.preventDefault();
+  e.returnValue = 'Reddit account linking is in progress. Are you sure you want to leave?';
+  return e.returnValue;
+}
+
+function handlePopState(e) {
+  e.preventDefault();
+  showNotification('Please wait for Reddit account linking to complete');
+}
+
+function handleRedditLinkingFlow() {
+  showLoadingState('Waiting for page to fully load...');
+  
+  setTimeout(() => {
+    updateLinkingProgress('Checking if you are on your own profile...');
+    
+    if (window.location.pathname === '/user/me' || window.location.pathname.includes('/user/me/')) {
+      updateLinkingProgress('Waiting for Reddit user data...');
+    } else {
+      const username = extractRedditUsername();
+      if (username) {
+        updateLinkingProgress('Verifying profile ownership...');
+      } else {
+        updateLinkingProgress('Unable to detect profile. Please ensure you are on your Reddit profile page.');
+      }
+    }
+  }, 2000);
+}
+
+function verifyOwnProfile(extractedUsername) {
+  if (window.location.pathname === '/user/me' || window.location.pathname.includes('/user/me/')) {
+    return true;
+  }
+  
+  const urlUsername = window.location.pathname.match(/\/user\/([^\/]+)/);
+  if (urlUsername && urlUsername[1] === extractedUsername) {
+    return true;
+  }
+  
+  return false;
+}
+
+function showProfileVerificationError() {
+  hideLoadingState();
+  
+  const errorDialog = document.createElement('div');
+  errorDialog.style.cssText = `
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+    background: rgba(0,0,0,0.8); z-index: 10000; display: flex; 
+    align-items: center; justify-content: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  `;
+  
+  errorDialog.innerHTML = `
+    <div style="background: white; border-radius: 8px; padding: 24px; max-width: 400px; margin: 20px; text-align: center;">
+      <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #dc3545;">
+        ⚠️ Profile Verification Failed
+      </h2>
+      <p style="color: #666; margin-bottom: 20px; line-height: 1.5;">
+        You must be on your own Reddit profile page to link your account. Please visit your profile page and try again.
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button id="go-to-profile" style="padding: 8px 16px; background: #ff4500; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+          Go to My Profile
+        </button>
+        <button id="cancel-linking" style="padding: 8px 16px; border: 1px solid #d1d5db; background: white; border-radius: 6px; cursor: pointer; font-size: 14px;">
+          Cancel
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(errorDialog);
+  
+  document.getElementById('go-to-profile').addEventListener('click', () => {
+    window.location.href = 'https://www.reddit.com/user/me';
+  });
+  
+  document.getElementById('cancel-linking').addEventListener('click', () => {
+    document.body.removeChild(errorDialog);
+    chrome.storage.sync.set({ 
+      isLinkingReddit: false,
+      linkingTabId: null
+    });
+    showNotification('Reddit account linking cancelled');
+  });
+}
+
+function showEnhancedRedditConsentPrompt(redditId, redditUsername) {
+  hideLoadingState();
+  const redditData = extractRedditProfileData();
+  
+  const consentDialog = document.createElement('div');
+  consentDialog.id = 'reddit-consent-dialog';
+  consentDialog.style.cssText = `
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+    background: rgba(0,0,0,0.8); z-index: 10000; display: flex; 
+    align-items: center; justify-content: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  `;
+  
+  consentDialog.innerHTML = `
+    <div style="background: white; border-radius: 12px; padding: 32px; max-width: 550px; margin: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 16px; color: #111; display: flex; align-items: center; gap: 8px;">
+        🔗 Link Your Reddit Account
+      </h2>
+      <p style="color: #666; margin-bottom: 24px; line-height: 1.6;">
+        TrueVotter has successfully gathered your Reddit account information. The following data will be securely stored to enable vote tracking on your posts:
+      </p>
+      <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 24px; border-left: 4px solid #ff4500;">
+        <div style="margin-bottom: 12px; display: flex; justify-content: space-between;">
+          <span style="font-weight: 600; color: #333;">Reddit Username:</span>
+          <span style="color: #ff4500; font-weight: 500;">u/${redditUsername}</span>
+        </div>
+        <div style="margin-bottom: 12px; display: flex; justify-content: space-between;">
+          <span style="font-weight: 600; color: #333;">User ID:</span>
+          <span style="font-family: monospace; font-size: 12px; color: #666;">${redditId}</span>
+        </div>
+        <div style="margin-bottom: 12px; display: flex; justify-content: space-between;">
+          <span style="font-weight: 600; color: #333;">Profile Avatar:</span>
+          <span style="color: ${redditData.avatar ? '#28a745' : '#6c757d'};">${redditData.avatar ? '✓ Available' : 'Not available'}</span>
+        </div>
+        <div style="margin-bottom: 12px; display: flex; justify-content: space-between;">
+          <span style="font-weight: 600; color: #333;">Karma Points:</span>
+          <span style="color: #ff4500; font-weight: 500;">${redditData.karma || 'Not available'}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+          <span style="font-weight: 600; color: #333;">Account Status:</span>
+          <span style="color: ${redditData.verified ? '#28a745' : '#6c757d'};">${redditData.verified ? '✓ Verified' : 'Standard'}</span>
+        </div>
+      </div>
+      <div style="background: #e3f2fd; padding: 16px; border-radius: 8px; margin-bottom: 24px;">
+        <p style="color: #1565c0; font-size: 14px; margin: 0; line-height: 1.5;">
+          <strong>Privacy Notice:</strong> This information helps us identify your posts and provide accurate vote tracking analytics. You can revoke this connection at any time through your dashboard settings.
+        </p>
+      </div>
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button id="reddit-consent-deny" style="padding: 12px 20px; border: 1px solid #d1d5db; background: white; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+          Decline & Sign Out
+        </button>
+        <button id="reddit-consent-allow" style="padding: 12px 20px; background: #ff4500; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;">
+          Accept & Link Account
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(consentDialog);
+  
+  document.getElementById('reddit-consent-allow').addEventListener('click', () => {
+    document.body.removeChild(consentDialog);
+    showLoadingState('Linking Reddit account to your TrueVotter profile...');
+    linkRedditAccountWithConsent(redditId, redditUsername, redditData);
+  });
+  
+  document.getElementById('reddit-consent-deny').addEventListener('click', () => {
+    document.body.removeChild(consentDialog);
+    handleConsentDecline();
+  });
+}
+
+function handleConsentDecline() {
+  showLoadingState('Signing you out...');
+  
+  setTimeout(() => {
+    chrome.storage.sync.clear(() => {
+      hideLoadingState();
+      showNotification('You have been signed out. Reddit account linking was declined.');
+      
+      setTimeout(() => {
+        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+          chrome.tabs.update(tabs[0].id, {url: chrome.runtime.getURL('popup.html')});
+        });
+      }, 2000);
+    });
+  }, 1000);
 }

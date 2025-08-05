@@ -8,10 +8,32 @@ async function checkAuthStatus() {
   currentUser = result.currentUser;
   
   if (authToken && currentUser) {
+    await checkRedditLinkingStatus();
     showAuthenticatedView();
     loadStats();
   } else {
     showLoginView();
+  }
+}
+
+async function checkRedditLinkingStatus() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/reddit-status`, {
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+      }
+    });
+    
+    if (response.ok) {
+      const status = await response.json();
+      currentUser.isRedditLinked = status.isLinked;
+      currentUser.redditUsername = status.redditUsername;
+      currentUser.redditId = status.redditId;
+      
+      await chrome.storage.sync.set({ currentUser });
+    }
+  } catch (error) {
+    console.error('Error checking Reddit linking status:', error);
   }
 }
 
@@ -78,9 +100,9 @@ function showAuthenticatedView() {
       <div id="status" style="padding: 10px; border-radius: 6px; font-size: 14px; text-align: center; margin-bottom: 15px;"></div>
       
       <div style="display: flex; flex-direction: column; gap: 10px;">
-        ${!currentUser.redditUsername ? `
+        ${!currentUser.isRedditLinked ? `
           <button id="linkRedditBtn" style="width: 100%; padding: 12px; background: #ff4500; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            🔗 Link Reddit Account
+            🔗 Link Reddit Account to Continue
           </button>
         ` : ''}
         <div style="display: flex; gap: 10px;">
@@ -101,11 +123,8 @@ function showAuthenticatedView() {
   
   document.getElementById('logoutBtn').addEventListener('click', handleLogout);
   
-  if (!currentUser.redditUsername) {
-    document.getElementById('linkRedditBtn').addEventListener('click', () => {
-      chrome.tabs.create({ url: 'https://www.reddit.com/user/me' });
-      showNotification('Visit your Reddit profile to link your account');
-    });
+  if (!currentUser.isRedditLinked) {
+    document.getElementById('linkRedditBtn').addEventListener('click', handleRedditLinking);
   }
 }
 
@@ -138,13 +157,10 @@ async function handleLogin() {
         currentUser: currentUser
       });
       
+      await checkRedditLinkingStatus();
       showAuthenticatedView();
       loadStats();
       
-      if (!currentUser.redditUsername && !currentUser.redditId) {
-        chrome.tabs.create({ url: 'https://www.reddit.com/user/me' });
-        showNotification('Please visit your Reddit profile to link your account');
-      }
     } else {
       showError(data.message || 'Login failed');
     }
@@ -191,13 +207,10 @@ async function handleRegister() {
         currentUser: currentUser
       });
       
+      await checkRedditLinkingStatus();
       showAuthenticatedView();
       loadStats();
       
-      if (!currentUser.redditUsername && !currentUser.redditId) {
-        chrome.tabs.create({ url: 'https://www.reddit.com/user/me' });
-        showNotification('Please visit your Reddit profile to link your account');
-      }
     } else {
       showError(data.message || 'Registration failed');
     }
@@ -253,6 +266,25 @@ async function loadStats() {
     statusElement.style.background = '#f8d7da';
     statusElement.style.color = '#721c24';
     statusElement.textContent = '⚠ Cannot connect to backend server';
+  }
+}
+
+async function handleRedditLinking() {
+  try {
+    const tab = await chrome.tabs.create({ url: 'https://www.reddit.com/user/me' });
+    
+    await chrome.storage.sync.set({ 
+      isLinkingReddit: true,
+      linkingTabId: tab.id,
+      authToken: authToken,
+      currentUser: currentUser
+    });
+    
+    showNotification('Redirecting to Reddit profile for account linking...');
+    window.close();
+  } catch (error) {
+    console.error('Error starting Reddit linking:', error);
+    showNotification('Error starting Reddit linking process');
   }
 }
 

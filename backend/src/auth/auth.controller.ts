@@ -34,6 +34,12 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('reddit-status')
+  async getRedditStatus(@Request() req) {
+    return this.authService.getRedditLinkingStatus(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Patch('link-reddit')
   async linkReddit(@Request() req, @Body() linkRedditDto: LinkRedditDto) {
     return this.authService.linkRedditAccount(

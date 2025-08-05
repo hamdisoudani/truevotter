@@ -70,6 +70,18 @@ export class AuthService {
     return await this.usersService.findOne(payload.sub);
   }
 
+  async getRedditLinkingStatus(userId: string) {
+    const user = await this.usersService.findOne(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    return {
+      isLinked: !!(user.redditUsername && user.redditId),
+      redditUsername: user.redditUsername || null,
+      redditId: user.redditId || null,
+    };
+  }
+
   async linkRedditAccount(
     userId: string,
     redditUsername: string,

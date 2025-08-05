@@ -38,7 +38,7 @@ function Dashboard() {
   const [stats, setStats] = useState<VoteStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user, token } = useAuth();
+  const { token } = useAuth();
 
   useEffect(() => {
     if (token) {
